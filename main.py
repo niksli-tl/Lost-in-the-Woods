@@ -43,11 +43,11 @@ class PlayerSprite(GeneralSprite):
 
 
 class EnemyHSprite(GeneralSprite):
-    def __init__(self, player_image, player_x, player_y, player_step, direction):
+    def __init__(self, player_image, player_x, player_y, player_step, direction, path_length):
         super().__init__(player_image, player_x, player_y, player_step)
         self.direction = direction
         self.x1 = self.rect.x
-        self.x2 = self.rect.x + 300
+        self.x2 = self.rect.x + path_length
 
     def update(self):
         if self.direction:
@@ -61,11 +61,11 @@ class EnemyHSprite(GeneralSprite):
 
 
 class EnemyVSprite(GeneralSprite):
-    def __init__(self, player_image, player_x, player_y, player_step, direction):
+    def __init__(self, player_image, player_x, player_y, player_step, direction, path_length):
         super().__init__(player_image, player_x, player_y, player_step)
         self.direction = direction
         self.y1 = self.rect.y
-        self.y2 = self.rect.y + 300
+        self.y2 = self.rect.y + path_length
 
     def update(self):
         if self.direction:
@@ -113,6 +113,8 @@ class MessageSprite(sprite.Sprite):
         self.images.append(transform.scale(image.load('images/welcome_text.png'), (512, 512)))
         self.images.append(transform.scale(image.load('images/nextlv_text.png'), (512, 512)))
         self.images.append(transform.scale(image.load('images/win_end_text.png'), (512, 512)))
+        self.images.append(transform.scale(image.load('images/wall_lose.png'),(512,512)))
+        self.images.append(transform.scale(image.load('images/monster_lose.png'),(512,512)))
         self.active_image = 0
         self.rect = self.images[0].get_rect()
         self.rect.x = x
@@ -151,9 +153,9 @@ def load_level1():
     walls.clear()
     main_sprite.move(25, 25)
     treasure = generate_treasure(1450, 800)
-    enemies.append(EnemyHSprite('images/fly1.png', 300, 600, 2, True))
-    enemies.append(EnemyVSprite('images/fly1.png', 600, 50, 2, True))
-    enemies.append(EnemyHSprite('images/fly1.png', 1000, 450, 2, True))
+    enemies.append(EnemyHSprite('images/fly1.png', 300, 600, 2, True,300))
+    enemies.append(EnemyVSprite('images/fly1.png', 600, 50, 2, True,300))
+    enemies.append(EnemyHSprite('images/fly1.png', 1000, 450, 2, True,300))
     walls.append(WallV(150, 0))
     walls.append(WallH(0, 300))
     walls.append(WallH(300, 200))
@@ -192,9 +194,9 @@ def load_level2():
     walls.clear()
     main_sprite.move(25, 25)
     treasure = generate_treasure(1450, 800)
-    enemies.append(EnemyHSprite('images/fly1.png', 300, 600, 2, True))
-    enemies.append(EnemyVSprite('images/fly1.png', 1250, 550, 2, True))
-    enemies.append(EnemyHSprite('images/fly1.png', 725, 50, 2, True))
+    enemies.append(EnemyHSprite('images/fly1.png', 300, 600, 2, True,300))
+    enemies.append(EnemyVSprite('images/fly1.png', 1250, 600, 2, True,250))
+    enemies.append(EnemyHSprite('images/fly1.png', 725, 50, 2, True,300))
     walls.append(WallV(150, 0))
     walls.append(WallV(150,100))
     walls.append(WallH(150, 300))
@@ -235,6 +237,7 @@ levels.append(load_level2)
 game = True
 state_timer = 0
 current_level = 0
+num_lose = 0
 # 0-game 1-lose 2-win 3-end
 state = 2
 while game:
@@ -253,15 +256,27 @@ while game:
             if main_sprite.collides_with(wall):
                 state = 1
                 state_timer = 0
+                num_lose = 3
         for enemy in enemies:
             enemy.update()
             enemy.reset()
             if enemy.collides_with(main_sprite):
                 state = 1
                 state_timer = 0
+                num_lose = 4
 
     elif state == 1:
-        pass
+        if state_timer == 0:
+            if num_lose == 3:
+                text.set_active_image(num_lose)
+            elif num_lose == 4:
+                text.set_active_image(num_lose)
+        if state_timer == 60:
+            state = 2
+            state_timer = 0
+        state_timer += 1
+        text.reset()
+
     elif state == 2:
         if state_timer == 0:
             if current_level == 0:
@@ -277,8 +292,17 @@ while game:
                 state = 0
         state_timer += 1
         text.reset()
+
     elif state == 3:
-        pass
+        if state_timer == 0:
+            text.set_active_image(2)
+        elif state_timer == 180:
+            state = 2
+            current_level = 0
+            state_timer = 0
+        state_timer += 1
+        text.reset()
+
     for e in event.get():
         if e.type == QUIT:
             game = False
